@@ -1322,4 +1322,3 @@ function Integrity({ item }) {
     </section>
   );
 }
-
