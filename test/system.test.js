@@ -111,7 +111,7 @@ before(
     ).deploy();
     const receipt = await contract.deploymentTransaction().wait();
     deployment = {
-      deploymentId: 'test-deployment',
+      deploymentId: "test-deployment",
       address: await contract.getAddress(),
       issuer: await signer.getAddress(),
       abi: artifact.abi,
@@ -121,9 +121,12 @@ before(
       blockNumber: receipt.blockNumber,
     };
     store = await createStore(root, "test-deployment");
-    const deploymentFile = join(root, 'deployment.json');
+    const deploymentFile = join(root, "deployment.json");
     await writeFile(deploymentFile, JSON.stringify(deployment));
-    server = createApp({ provider, deployment, store, deploymentFile }).listen(0, "127.0.0.1");
+    server = createApp({ provider, deployment, store, deploymentFile }).listen(
+      0,
+      "127.0.0.1",
+    );
     await new Promise((resolve) => server.once("listening", resolve));
     base = `http://127.0.0.1:${server.address().port}/api`;
   },
@@ -304,14 +307,16 @@ test("PDF: downloadable PDF, correct QR route and metadata", async () => {
 test("API: tampered off-chain metadata cannot produce a trusted PDF", async () => {
   const original = store.get(issued.credentialId);
   try {
-    await store.put({ ...original, data: { ...original.data, grade: 'B' } });
-    const lookup = await call('/verify/' + issued.credentialId);
-    assert.equal(lookup.data.status, 'VERIFIED');
+    await store.put({ ...original, data: { ...original.data, grade: "B" } });
+    const lookup = await call("/verify/" + issued.credentialId);
+    assert.equal(lookup.data.status, "VERIFIED");
     assert.equal(lookup.data.storedDataMatches, false);
-    const pdf = await call('/certificates/' + issued.credentialId + '/pdf');
+    const pdf = await call("/certificates/" + issued.credentialId + "/pdf");
     assert.equal(pdf.status, 409);
-    assert.equal(pdf.error.code, 'DATA_MISMATCH');
-  } finally { await store.put(original); }
+    assert.equal(pdf.error.code, "DATA_MISMATCH");
+  } finally {
+    await store.put(original);
+  }
 });
 
 test("API: missing reason blocks revocation", async () => {
@@ -370,14 +375,19 @@ test("chain identity mismatch fails closed instead of trusting JSON", async () =
     (error) => error.code === "CHAIN_UNAVAILABLE",
   );
 });
-test('API: changing the active deployment blocks an API still holding the old scope', async () => {
-  const path = join(root, 'deployment.json');
+test("API: changing the active deployment blocks an API still holding the old scope", async () => {
+  const path = join(root, "deployment.json");
   try {
-    await writeFile(path, JSON.stringify({ ...deployment, deploymentId: 'new-deployment' }));
-    const response = await call('/verify/' + issued.credentialId);
+    await writeFile(
+      path,
+      JSON.stringify({ ...deployment, deploymentId: "new-deployment" }),
+    );
+    const response = await call("/verify/" + issued.credentialId);
     assert.equal(response.status, 503);
-    assert.equal(response.error.code, 'CHAIN_UNAVAILABLE');
-  } finally { await writeFile(path, JSON.stringify(deployment)); }
+    assert.equal(response.error.code, "CHAIN_UNAVAILABLE");
+  } finally {
+    await writeFile(path, JSON.stringify(deployment));
+  }
 });
 
 test("missing deployment fails closed", async () => {
@@ -390,6 +400,86 @@ test("missing deployment fails closed", async () => {
     (error) => error.code === "CHAIN_UNAVAILABLE",
   );
 });
+test("explorer: live counts, blocks, decoded receipts and immutable history", async () => {
+  const overview = (await call("/explorer")).data;
+  assert.equal(overview.chainId, "31337");
+  assert.ok(overview.issued >= 2 && overview.revoked >= 2);
+  assert.equal(
+    new Set(overview.activity.map((e) => e.key)).size,
+    overview.activity.length,
+  );
+  const details = (await call("/verify/" + issued.credentialId)).data;
+  for (const key of ["issuance", "revocation"]) {
+    const event = details.evidence[key];
+    const tx = (await call("/explorer/transactions/" + event.transactionHash))
+      .data;
+    assert.equal(tx.status, "Confirmed");
+    assert.equal(tx.sender, deployment.issuer);
+    assert.ok(BigInt(tx.gasUsed) > 0n);
+    assert.equal(tx.events[0].name, event.event);
+    const block = (await call("/explorer/blocks/" + tx.blockNumber)).data;
+    assert.equal(block.hash, tx.blockHash);
+    assert.ok(block.transactions.some((t) => t.hash === tx.transactionHash));
+  }
+  assert.equal(
+    (await call("/explorer/transactions/" + deployment.transactionHash)).data
+      .kind,
+    "Registry deployment",
+  );
+  assert.equal((await call("/explorer/transactions/bad")).status, 400);
+  assert.equal((await call("/explorer/blocks/999999")).status, 404);
+  assert.equal((await call("/explorer?before=-1")).status, 400);
+});
+test("streaming: actual submission, confirmation and failure preserve shared service", async () => {
+  async function stream(path, body) {
+    const response = await fetch(base + path, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/x-ndjson",
+      },
+      body: JSON.stringify(body),
+    });
+    return (await response.text())
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+  }
+  const prior = (await call("/explorer")).data;
+  const events = await stream("/certificates", sample);
+  assert.deepEqual(
+    events.filter((e) => e.stage).map((e) => e.stage),
+    ["Preparing transaction", "Submitted", "Pending confirmation", "Confirmed"],
+  );
+  const result = events.at(-1).data;
+  const receipt = events.find((e) => e.receipt).receipt;
+  assert.equal(
+    receipt.transactionHash,
+    result.evidence.issuance.transactionHash,
+  );
+  assert.equal(
+    (await call("/verify/" + result.credentialId)).data.status,
+    "VERIFIED",
+  );
+  const revoked = await stream(
+    "/certificates/" + result.credentialId + "/revoke",
+    { reason: "Stream workflow test" },
+  );
+  assert.equal(revoked.at(-1).data.status, "REVOKED");
+  const updated = (await call("/explorer")).data;
+  assert.equal(updated.issued, prior.issued + 1);
+  assert.equal(updated.revoked, prior.revoked + 1);
+  assert.equal(
+    revoked.find((e) => e.receipt).receipt.events[0].name,
+    "CertificateRevoked",
+  );
+  const failed = await stream(
+    "/certificates/" + result.credentialId + "/revoke",
+    { reason: "Again" },
+  );
+  assert.equal(failed.at(-1).stage, "Failed");
+  assert.ok(!failed.some((e) => e.stage === "Confirmed"));
+});
 test("API: chain outage returns distinct 503 and preserves saved record", async () => {
   await new Promise((resolve) => {
     node.once("exit", resolve);
@@ -398,5 +488,6 @@ test("API: chain outage returns distinct 503 and preserves saved record", async 
   const response = await call("/verify/" + issued.credentialId);
   assert.equal(response.status, 503);
   assert.equal(response.error.code, "CHAIN_UNAVAILABLE");
-  assert.equal(store.all().length, 1);
+  assert.equal(store.all().length, 2);
+  assert.equal((await call("/explorer")).error.code, "CHAIN_UNAVAILABLE");
 });

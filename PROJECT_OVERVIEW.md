@@ -26,3 +26,13 @@ Revoke: required reason → issuer transaction → receipt → off-chain reason 
 Contract authorization is real. Browser routing is not authentication. Only trusted localhost users are assumed; Hardhat accounts are unlocked and publicly known development accounts. The chain is ephemeral. Stop/restart requires deployment/setup and API restart. PII is intentionally not stored on-chain, but this demo's public localhost verification route displays its fictional off-chain details.
 
 No attempt is made to prove that a PDF's visuals are genuine, that an institution is accredited, or that academic facts were truthful when submitted. A real deployment would need institutional identity, authentication, access/privacy controls, durable transactional persistence, operational monitoring and production key management.
+
+## Feature 7 and 8 architecture
+
+`server/explorer.js` reads Ethers network/block/transaction/receipt data and current-contract logs. Event counts include all successful issuance/revocation events from this deployment, including authorized writes made outside the UI. Block lists cover the local network, while events are scoped to the deployed registry. A bounded snapshot cache avoids rereading the same blocks every four seconds. Existing deployment identity checks run before cached responses so a reset cannot validate stale data.
+
+`server/app.js` retains a single serialized issuance/revocation implementation with JSON or newline-delimited JSON output. The browser can observe actual submission before `transaction.wait()` returns. Receipt enrichment failure cannot prevent saving a successfully mined credential. Academic records remain off-chain; receipt confirmation precedes atomic persistence.
+
+`src/transactions.jsx` renders transaction stages and receipt evidence. Explorer actions reuse Issue and RevokeDialog; certificate history links to internal block and receipt routes. Revocation changes current state and emits a second event without erasing issuance.
+
+`src/QRUpload.jsx` uses a lazy-loaded local ZXing decoder, blob image preview and shared file/drop/paste handling. `src/qr.js` validates image format/size and the exact local verification URL structure. React ignores obsolete decoding results and releases blob URLs. A decoded ID uses the same public on-chain lookup as manual entry. No image reaches the server. This solves the separate-phone localhost limitation while retaining the distinction between registration status and canonical academic-data integrity.

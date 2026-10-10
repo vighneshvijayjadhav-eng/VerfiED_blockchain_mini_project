@@ -9,3 +9,7 @@ Original local SVG campus colonnade fills the right side of the dashboard hero i
 Reusable components: page heading, status pill, empty state, loading skeleton, error notice, evidence panel, academic field grid, certificate preview, confirmation dialog. Status comes from live chain reads. Integrity is displayed separately from registration/revocation.
 
 Execution: contract and actual-node tests; deployment-scoped API and canonical hashing; styled PDF/QR; React integration; full happy/negative smoke tests, production build, visual inspection; documentation and safe normal Git push.
+
+## Explorer and QR upgrade layout
+
+Preserve the user-selected charcoal/white/emerald palette. Explorer reuses existing cards, forms, status treatments and revocation dialog. Receipt fields wrap long hashes; block/activity rows link to internal inspectors. Public verification uses a three-option segmented control and a restrained dashed upload zone. After an image is loaded, the zone compacts to bring the live result closer to the top of a laptop screen. The original PDF design and canonicalization stay unchanged.

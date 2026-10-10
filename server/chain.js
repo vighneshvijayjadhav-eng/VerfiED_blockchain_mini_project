@@ -95,18 +95,21 @@ export function createChain(provider, deployment) {
         deployment.blockNumber,
       ),
     ]);
-    const summarize = (log) =>
+    const summarize = async (log) =>
       log
         ? {
             transactionHash: log.transactionHash,
             blockNumber: log.blockNumber,
             blockHash: log.blockHash,
             event: log.fragment.name,
+            timestamp: new Date(
+              (await provider.getBlock(log.blockNumber)).timestamp * 1000,
+            ).toISOString(),
           }
         : null;
     return {
-      issuance: summarize(issues[0]),
-      revocation: summarize(revocations[0]),
+      issuance: await summarize(issues[0]),
+      revocation: await summarize(revocations[0]),
     };
   }
   return { contract, assertLive, lookup, writer, evidence };

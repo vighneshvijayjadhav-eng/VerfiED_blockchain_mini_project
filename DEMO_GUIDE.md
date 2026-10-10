@@ -28,3 +28,15 @@ Before presenting: complete README setup, keep the two terminals running, open l
 **Wrong/unknown ID:** paste the ID from the issuance confirmation or registry. Unknown well-formed IDs yield Not Found, while malformed IDs show a validation error.
 
 **Storage failure after confirmation:** keep the reported transaction hash. The chain transaction cannot be undone by a file error. Resolve the storage issue and reset the demo; there is no silent rollback or fake success.
+
+## Explorer + screenshot demonstration (four minutes)
+
+1. Open **Blockchain Explorer**. Point out chain ID 31337, actual current block and deployed contract. Select **Register New Credential**, fill or use fictional demo data, then issue. Show the completed transaction stages and receipt.
+2. Open the PDF, take a screenshot containing its complete QR and white border (Windows `Win+Shift+S`). Open **Public verification → Upload QR Image**. Select a saved PNG/JPEG/WebP, drop it, or focus the upload zone and press Ctrl+V. Show the extracted ID and **Verified** result. This works on the presentation laptop without a phone.
+3. Follow **View Transaction → View Block** to show sender, gas, block hash and CertificateIssued event. The registry contains the new credential.
+4. In **Blockchain Explorer → Revoke Existing Credential**, search the ID, select revoke, supply a fictional correction reason and confirm. Show the new receipt and activity entry.
+5. Paste/upload the **same image** again: **Revoked**. The issuance record still exists, and its canonical data can still match. Explain that the QR is a reference to current status, not proof of image/PDF-byte integrity.
+
+Negative checks: an unknown but correctly formatted ID produces Not Found; an unrelated QR or blank image produces Invalid QR; a stopped node produces Blockchain Unavailable. If demonstrating a node restart, rerun `npm run demo:setup` and restart `npm run dev`; old deployment records are intentionally isolated. Use a new fictional credential after reset.
+
+For a sharp screenshot include the entire QR with its white margin. Images above 8 MB or 20 megapixels are rejected; crop oversized screenshots. QR decoding needs no Internet service after dependencies are installed. The local API and chain must still be running for verification.

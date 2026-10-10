@@ -53,3 +53,26 @@ The user subsequently selected charcoal, white and emerald. Updated the shared s
 ## Deliberate limits
 
 This is a trusted localhost demonstration, not production authentication or durable decentralized infrastructure. Hardhat accounts are unlocked development accounts. QR links using localhost must be opened on the same computer. Data integrity does not prove PDF-byte/visual authenticity. Reasons are off-chain statements. Built-in PDF fonts restrict supported input to the documented Latin character set. Disk failure after chain confirmation requires manual recovery/reset; there is no recovery journal. No public-chain deployment, physical printer test, phone-over-LAN access or load testing was performed.
+
+## Feature 7 / 8 upgrade verification (10 October 2026)
+
+Implemented a real local blockchain explorer, shared streamed issue/revoke workflow, block and transaction inspectors, receipt/event metadata and timestamped credential audit links. Added browser-local QR image selection/drop/paste, strict local-URL and file validation, preview/reset, extracted ID and live-chain results. The charcoal/emerald theme, canonical hashing and PDF design are preserved.
+
+Executed for this upgrade:
+
+- `npm install @zxing/browser`: passed; npm reported zero vulnerabilities.
+- `npm test`: **26 passed, 0 failed**. Existing contract/API tests plus QR parser/file limits, real explorer block/receipt/event data, changed-head cache refresh, stream stages for issuance/revocation/failure, and chain-outage errors.
+- `npm run build`: passed, including a separate lazy-loaded QR decoder chunk.
+- Fresh local node + `npm run demo:setup` + `npm run dev`: passed after the previous terminal processes stopped. A fresh deployment scope displayed zero issuance/revocation events and preserved old data in its prior scope.
+- Browser explorer issuance: passed with fictional data and a real successful receipt; activity/count updated automatically.
+- PDF image QR upload through file selection: passed in the first browser session, producing Verified. A later file-chooser automation attempt stalled; subsequent image tests used the supported clipboard-paste path.
+- Browser paste of a full rendered PDF screenshot: decoded `VED-F4619058609A422C` and returned Verified. Issuance receipt and block were inspected in the UI.
+- Browser explorer revocation with required reason: passed. Pasting the identical image afterward returned Revoked while the stored academic data hash still matched. Issuance and revocation evidence both remained available.
+- Unknown-ID QR: Not Found. Unrelated URL QR: Invalid QR without navigating. Blank image: Invalid QR with readable guidance.
+- Desktop 1366×768 and mobile 390×844 screenshot-upload layouts inspected; mobile document width did not overflow. Uploaded-image layout compacts to expose the status sooner.
+
+Browser testing found and fixed stale response reuse when navigating from a transaction receipt to a block. The shared loading hook now withholds data belonging to the previous request. Receipt enrichment errors cannot interrupt persistence after a transaction has mined.
+
+Limits of this upgrade's verification: no physical phone or camera workflow (not required), no manual drag-and-drop test, no separate JPEG/WebP decoding sample, and no browser-level stopped-node screenshot; file type validation is automated and actual stopped-node API/explorer behavior is tested on the isolated test chain. Blur cannot always be recovered: unreadable QR codes produce a retry/crop message. This remains a trusted localhost demo, not production authentication. Generated PDFs, screenshots, QR fixtures and local academic records are ignored under `.local/`.
+
+Additional browser regression checks passed: switching from a decoded QR to the integrity tab preloaded the same credential; changing A+ to B produced Data mismatch detected while retaining Revoked; navigating from the issuance receipt to its block worked without reloading after the stale-response fix.

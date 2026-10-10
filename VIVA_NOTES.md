@@ -27,3 +27,19 @@
 **What is permanent here?** Revocation cannot be undone within a deployed contract. The local development chain itself is ephemeral and can be restarted; this prototype does not promise durable public-chain permanence.
 
 **What is the project's contribution?** A complete demonstrable trust flow: issuance → receipt → academic PDF → live public lookup → independent data mismatch → permanent contract revocation, with explicit and defensible trust boundaries.
+
+## Explorer and screenshot viva questions
+
+**Is this Etherscan?** No. Express reads the standalone local Hardhat network through Ethers: getNetwork, getBlock, getTransaction, getTransactionReceipt and registry event queries. The browser sees bounded, read-only explorer endpoints, not a general RPC proxy. Counts are actual current-deployment events.
+
+**Who submits a transaction?** The existing Express issuance/revocation handlers use the authorized local signer. Canonical SHA-256 hashing still happens on the server. The private signer is never delivered to React. Solidity independently rejects unauthorized issue/revoke attempts; localhost access is a demo trust boundary, not user authentication.
+
+**What proves confirmation?** A successful mined receipt, not a button animation or a generated transaction ID. The UI retains Submitted and Pending stages even when Hardhat automining makes confirmation very fast. Receipt and event values come from the chain.
+
+**Why is revoke another transaction?** Changing contract state requires a transaction. Revocation permanently flips the flag and emits a new event. It cannot remove the prior issuance transaction, allowing a chronological audit trail. The human reason remains an off-chain statement.
+
+**How does QR screenshot verification work offline?** Locally bundled ZXing decodes pixels in the browser. Strict parsing extracts a credential ID from a permitted local verification URL without opening it. The browser asks the local API to query the current contract. Image decoding needs no external service; on-chain lookup still needs the local node.
+
+**Why not simply scan with a phone?** Localhost on a phone addresses the phone, not the laptop. Upload or paste the screenshot on the laptop instead of exposing the demo server to the LAN.
+
+**Does the QR authenticate the certificate image?** No. It establishes current registration/revocation of the referenced ID. A forged document can copy a valid QR. The separate integrity endpoint compares user-supplied canonical academic fields with the on-chain SHA-256 hash, not PDF bytes.

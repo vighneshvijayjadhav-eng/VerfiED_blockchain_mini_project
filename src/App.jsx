@@ -32,6 +32,8 @@ import {
   Ban,
 } from "lucide-react";
 import "./styles.css";
+import QRUpload from "./QRUpload.jsx";
+import { transact, TransactionProgress, Receipt } from "./transactions.jsx";
 
 const institution = "Pune Institute of Computer Technology (PICT) — DEMO";
 const fields = [
@@ -96,17 +98,25 @@ function useLoad(path, revision = 0) {
   });
   useEffect(() => {
     let alive = true;
-    setState({ loading: true, data: null, error: null });
+    setState({ path, revision, loading: true, data: null, error: null });
     api(path)
-      .then((data) => alive && setState({ loading: false, data, error: null }))
+      .then(
+        (data) =>
+          alive &&
+          setState({ path, revision, loading: false, data, error: null }),
+      )
       .catch(
-        (error) => alive && setState({ loading: false, data: null, error }),
+        (error) =>
+          alive &&
+          setState({ path, revision, loading: false, data: null, error }),
       );
     return () => {
       alive = false;
     };
   }, [path, revision]);
-  return state;
+  return state.path === path && state.revision === revision
+    ? state
+    : { loading: true, data: null, error: null };
 }
 const formatDate = (value) =>
   new Date(value).toLocaleDateString("en-IN", {
@@ -246,6 +256,7 @@ export default function Shell() {
             ["/", "Overview", LayoutDashboard],
             ["/issue", "Issue certificate", FilePlus2],
             ["/registry", "Certificate registry", LibraryBig],
+            ["/explorer", "Blockchain Explorer", Blocks],
             ["/verify", "Public verification", ScanLine],
           ].map(([to, label, Icon]) => (
             <NavLink key={to} to={to} end>
@@ -296,6 +307,12 @@ function AppRoutes() {
       <Route path="/" element={<Dashboard />} />
       <Route path="/issue" element={<Issue />} />
       <Route path="/registry" element={<Registry />} />
+      <Route path="/explorer" element={<Explorer />} />
+      <Route path="/explorer/blocks/:number" element={<ExplorerInspect />} />
+      <Route
+        path="/explorer/transactions/:hash"
+        element={<ExplorerInspect />}
+      />
       <Route path="/certificates/:id" element={<Details />} />
       <Route path="/verify" element={<Verify />} />
       <Route path="/verify/:id" element={<Verify />} />
@@ -532,7 +549,8 @@ function Preview({ data }) {
     </div>
   );
 }
-function Issue() {
+function Issue({ onComplete }) {
+  const [progress, setProgress] = useState([]);
   const [data, setData] = useState(blank),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(null),
@@ -542,7 +560,10 @@ function Issue() {
     setBusy(true);
     setError(null);
     try {
-      setIssued(await api("/certificates", data));
+      setProgress([]);
+      const result = await transact("/certificates", data, setProgress);
+      setIssued(result);
+      onComplete?.(result);
     } catch (error) {
       setError(error);
     } finally {
@@ -599,6 +620,7 @@ function Issue() {
               </Link>
             </div>
             <Evidence item={issued} />
+            <TransactionProgress events={progress} />
             <button
               className="button secondary"
               onClick={() => {
@@ -644,29 +666,32 @@ function Issue() {
         Academic details stay off-chain. Their cryptographic proof lives on it.
       </Heading>
       <div className="issue-layout">
-        <form id="issue-form" className="card padded" onSubmit={submit}>
-          <div className="step-heading">
-            <span>01</span>
-            <div>
-              <h2>Academic details</h2>
-              <p>Enter the record exactly as it should appear.</p>
+        <div>
+          <TransactionProgress events={progress} />
+          <form id="issue-form" className="card padded" onSubmit={submit}>
+            <div className="step-heading">
+              <span>01</span>
+              <div>
+                <h2>Academic details</h2>
+                <p>Enter the record exactly as it should appear.</p>
+              </div>
             </div>
-          </div>
-          <fieldset disabled={busy}>
-            <AcademicFields data={data} onChange={setData} />
-          </fieldset>
-          <div className="form-note">
-            <Fingerprint size={20} />
-            <p>
-              A SHA-256 hash of the complete canonical record will be
-              registered. No student details are sent to the blockchain.
-            </p>
-          </div>
-          <Notice error={error} />
-          <small className="muted">
-            Localhost demo action · Contract enforces the authorized issuer
-          </small>
-        </form>
+            <fieldset disabled={busy}>
+              <AcademicFields data={data} onChange={setData} />
+            </fieldset>
+            <div className="form-note">
+              <Fingerprint size={20} />
+              <p>
+                A SHA-256 hash of the complete canonical record will be
+                registered. No student details are sent to the blockchain.
+              </p>
+            </div>
+            <Notice error={error} />
+            <small className="muted">
+              Localhost demo action · Contract enforces the authorized issuer
+            </small>
+          </form>
+        </div>
         <aside className="preview-column">
           <div className="eyebrow">LIVE DOCUMENT PREVIEW</div>
           <Preview data={data} />
@@ -779,7 +804,21 @@ function Evidence({ item }) {
                 {item.evidence[key].event} · Block{" "}
                 {item.evidence[key].blockNumber}
               </small>
+              <small>{item.evidence[key].timestamp}</small>
               <CopyValue value={item.evidence[key].transactionHash} />
+              <div className="actions">
+                <Link
+                  to={
+                    "/explorer/transactions/" +
+                    item.evidence[key].transactionHash
+                  }
+                >
+                  View Transaction
+                </Link>
+                <Link to={"/explorer/blocks/" + item.evidence[key].blockNumber}>
+                  View Block
+                </Link>
+              </div>
             </div>
           ),
       )}
@@ -803,6 +842,7 @@ function FieldList({ data }) {
   );
 }
 function RevokeDialog({ id, onClose, onDone }) {
+  const [progress, setProgress] = useState([]);
   const [reason, setReason] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(null);
@@ -824,8 +864,13 @@ function RevokeDialog({ id, onClose, onDone }) {
           setBusy(true);
           setError(null);
           try {
-            await api(`/certificates/${id}/revoke`, { reason });
-            onDone();
+            setProgress([]);
+            const result = await transact(
+              `/certificates/${id}/revoke`,
+              { reason },
+              setProgress,
+            );
+            onDone(result);
           } catch (error) {
             setError(error);
             setBusy(false);
@@ -847,6 +892,7 @@ function RevokeDialog({ id, onClose, onDone }) {
           </button>
         </div>
         <h2>Permanently revoke this credential?</h2>
+        <TransactionProgress events={progress} />
         <p>
           This cannot be undone. The same verification link will show{" "}
           <strong>Revoked</strong> after the transaction confirms.
@@ -1007,6 +1053,8 @@ function Details() {
   );
 }
 function Verify() {
+  const [tab, setTab] = useState("Enter Credential ID");
+  const [qrId, setQrId] = useState(null);
   const { id } = useParams();
   const navigate = useNavigate();
   const [query, setQuery] = useState(id || "");
@@ -1024,34 +1072,58 @@ function Verify() {
         </span>
       </section>
       <div className="verify-content">
-        <form
-          className="lookup card"
-          onSubmit={(e) => {
-            e.preventDefault();
-            navigate(
-              "/verify/" + encodeURIComponent(query.trim().toUpperCase()),
-            );
-          }}
-        >
-          <label htmlFor="lookup">
-            Verify an academic credential
-            <small>Enter the ID printed on the certificate.</small>
-          </label>
-          <div>
-            <input
-              id="lookup"
-              required
-              placeholder="VED-…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <button className="button">
-              <Search size={18} /> Verify credential
-            </button>
-          </div>
-        </form>
-        {id ? (
-          <VerificationResult key={id} id={id} />
+        <div className="verify-tabs card">
+          <Segments
+            values={[
+              "Enter Credential ID",
+              "Upload QR Image",
+              "Check Credential Data Integrity",
+            ]}
+            value={tab}
+            onChange={(next) => {
+              if (next === tab) return;
+              if (tab === "Upload QR Image" && qrId) navigate("/verify/" + qrId);
+              if (next === "Upload QR Image") setQrId(null);
+              setTab(next);
+            }}
+          />
+        </div>
+        {tab === "Upload QR Image" ? (
+          <QRUpload onDecoded={setQrId} />
+        ) : (
+          <form
+            className="lookup card"
+            onSubmit={(e) => {
+              e.preventDefault();
+              navigate(
+                "/verify/" + encodeURIComponent(query.trim().toUpperCase()),
+              );
+            }}
+          >
+            <label htmlFor="lookup">
+              Verify an academic credential
+              <small>Enter the ID printed on the certificate.</small>
+            </label>
+            <div>
+              <input
+                id="lookup"
+                required
+                placeholder="VED-…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              <button className="button">
+                <Search size={18} /> Verify credential
+              </button>
+            </div>
+          </form>
+        )}
+        {(tab === "Upload QR Image" ? qrId : id) ? (
+          <VerificationResult
+            key={(tab === "Upload QR Image" ? qrId : id) + tab}
+            id={tab === "Upload QR Image" ? qrId : id}
+            integrityOpen={tab === "Check Credential Data Integrity"}
+          />
         ) : (
           <div className="verification-intro">
             <div>
@@ -1083,7 +1155,7 @@ function Verify() {
     </>
   );
 }
-function VerificationResult({ id }) {
+function VerificationResult({ id, integrityOpen = false }) {
   const [revision, setRevision] = useState(0);
   const state = useLoad("/verify/" + id, revision);
   const item = state.data;
@@ -1175,7 +1247,7 @@ function VerificationResult({ id }) {
               <Evidence item={item} />
             </section>
           </div>
-          <Integrity item={item} />
+          <Integrity item={item} startOpen={integrityOpen} />
         </>
       )}
       <button
@@ -1187,7 +1259,7 @@ function VerificationResult({ id }) {
     </>
   );
 }
-function Integrity({ item }) {
+function Integrity({ item, startOpen = false }) {
   const [data, setData] = useState(
     item.record?.data || {
       ...blank,
@@ -1215,7 +1287,7 @@ function Integrity({ item }) {
         </div>
         <Fingerprint size={30} />
       </div>
-      <details>
+      <details open={startOpen || undefined}>
         <summary>
           Inspect or edit the academic data{" "}
           <span>Try changing the grade to demonstrate tamper detection</span>
@@ -1320,5 +1392,290 @@ function Integrity({ item }) {
         or visuals.
       </p>
     </section>
+  );
+}
+
+function Segments({ values, value, onChange }) {
+  return (
+    <div className="segments" role="group" aria-label="Choose an option">
+      {values.map((item) => (
+        <button
+          type="button"
+          key={item}
+          aria-pressed={value === item}
+          onClick={() => onChange(item)}
+        >
+          {item}
+        </button>
+      ))}
+    </div>
+  );
+}
+function Explorer() {
+  const [state, setState] = useState({ loading: true }),
+    [revision, setRevision] = useState(0),
+    [before, setBefore] = useState(null);
+  const [action, setAction] = useState("Register New Credential"),
+    [search, setSearch] = useState(""),
+    [selected, setSelected] = useState(null),
+    [completed, setCompleted] = useState(null);
+  const records = useLoad("/certificates", revision);
+  useEffect(() => {
+    let alive = true,
+      timer;
+    async function refresh() {
+      try {
+        const data = await api(
+          "/explorer" + (before === null ? "" : "?before=" + before),
+        );
+        if (alive) setState({ data });
+      } catch (error) {
+        if (alive) setState({ error });
+      }
+      if (alive) timer = setTimeout(refresh, 4000);
+    }
+    refresh();
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [revision, before]);
+  const data = state.data;
+  const refresh = () => setRevision((v) => v + 1);
+  return (
+    <>
+      <Heading
+        eyebrow="LOCAL CHAIN / LIVE EVIDENCE"
+        title="Blockchain Explorer"
+      >
+        Inspect the ledger. Follow every confirmed action. Updates every four
+        seconds.
+      </Heading>
+      <Notice error={state.error} />
+      {state.loading && <Loading />}
+      {data && (
+        <>
+          <div className="explorer-stats">
+            {[
+              ["Network", data.status],
+              ["Chain ID", data.chainId],
+              ["Current block", data.blockNumber],
+              ["Issuance transactions", data.issued],
+              ["Revocation transactions", data.revoked],
+            ].map(([label, value]) => (
+              <div className="card padded" key={label}>
+                <small>{label}</small>
+                <h2>{value}</h2>
+              </div>
+            ))}
+          </div>
+          <section className="card padded">
+            <small>Deployed contract</small>
+            <CopyValue value={data.contractAddress} />
+            <small>Latest block hash</small>
+            <CopyValue value={data.blockHash} />
+          </section>
+        </>
+      )}
+      <section className="explorer-actions">
+        <h2>Execute Blockchain Action</h2>
+        <p>
+          Local developer demo functions. The server signs; the contract
+          independently enforces issuer authorization.
+        </p>
+        <Segments
+          values={["Register New Credential", "Revoke Existing Credential"]}
+          value={action}
+          onChange={setAction}
+        />
+        {action === "Register New Credential" ? (
+          <Issue onComplete={refresh} />
+        ) : (
+          <section className="card padded">
+            <h3>Select a registered credential</h3>
+            <label>
+              Search certificates
+              <input
+                placeholder="Name or credential ID"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </label>
+            <Notice error={records.error} />
+            {records.loading && <Loading />}
+            {records.data
+              ?.filter(
+                (item) =>
+                  item.status === "VERIFIED" &&
+                  (
+                    item.record.data.fullName +
+                    " " +
+                    item.record.data.credentialId
+                  )
+                    .toLowerCase()
+                    .includes(search.toLowerCase()),
+              )
+              .map((item) => (
+                <div
+                  className="explorer-row"
+                  key={item.record.data.credentialId}
+                >
+                  <div>
+                    <strong>{item.record.data.fullName}</strong>
+                    <small>{item.record.data.credentialId}</small>
+                  </div>
+                  <button
+                    className="button danger"
+                    onClick={() => setSelected(item.record.data.credentialId)}
+                  >
+                    Revoke credential
+                  </button>
+                </div>
+              ))}
+            {records.data &&
+              !records.data.some((item) => item.status === "VERIFIED") && (
+                <p>No active credentials available to revoke.</p>
+              )}
+            {completed && (
+              <>
+                <h3>Revocation confirmed</h3>
+                <Evidence item={completed} />
+                <ReceiptLookup
+                  hash={completed.evidence.revocation.transactionHash}
+                />
+                <Link to={"/verify/" + completed.credentialId}>
+                  Check the updated public status
+                </Link>
+              </>
+            )}
+          </section>
+        )}
+      </section>
+      {data && (
+        <div className="two-columns">
+          <section className="card padded">
+            <h2>Recent contract activity</h2>
+            {!data.activity.length && (
+              <p>No issuance or revocation events on this deployment.</p>
+            )}
+            {data.activity.map((event) => (
+              <div className="explorer-row" key={event.key}>
+                <div>
+                  <strong>{event.event}</strong>
+                  <Link to={"/explorer/transactions/" + event.transactionHash}>
+                    View Transaction
+                  </Link>
+                </div>
+                <Link to={"/explorer/blocks/" + event.blockNumber}>
+                  Block {event.blockNumber}
+                </Link>
+              </div>
+            ))}
+          </section>
+          <section className="card padded">
+            <h2>Browse blocks</h2>
+            {data.blocks.map((block) => (
+              <Link
+                className="explorer-row"
+                key={block.hash}
+                to={"/explorer/blocks/" + block.number}
+              >
+                <strong>Block {block.number}</strong>
+                <span>{block.transactions.length} transactions</span>
+              </Link>
+            ))}
+            <div className="actions">
+              <button
+                className="button secondary"
+                onClick={() => setBefore(null)}
+              >
+                Latest blocks
+              </button>
+              {data.nextBefore !== null && (
+                <button
+                  className="button secondary"
+                  onClick={() => setBefore(data.nextBefore)}
+                >
+                  Older blocks
+                </button>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
+      {selected && (
+        <RevokeDialog
+          id={selected}
+          onClose={() => setSelected(null)}
+          onDone={(result) => {
+            setSelected(null);
+            setCompleted(result);
+            refresh();
+          }}
+        />
+      )}
+    </>
+  );
+}
+function ExplorerInspect() {
+  const { number, hash } = useParams();
+  const state = useLoad(
+    hash ? "/explorer/transactions/" + hash : "/explorer/blocks/" + number,
+  );
+  return (
+    <>
+      <Link className="breadcrumb" to="/explorer">
+        ← Blockchain Explorer
+      </Link>
+      <Heading
+        eyebrow="LOCAL BLOCKCHAIN EVIDENCE"
+        title={hash ? "Transaction receipt" : "Block " + number}
+      >
+        Read directly from the current Hardhat network.
+      </Heading>
+      <Notice error={state.error} />
+      {state.loading && <Loading />}
+      {state.data && (
+        <section className="card padded">
+          {hash ? (
+            <Receipt value={state.data} />
+          ) : (
+            <>
+              <dl className="receipt">
+                {["number", "hash", "parentHash", "timestamp"].map((key) => (
+                  <div key={key}>
+                    <dt>{key}</dt>
+                    <dd>{state.data[key]}</dd>
+                  </div>
+                ))}
+              </dl>
+              <h3>{state.data.transactions.length} transactions</h3>
+              {state.data.transactions.map((tx) => (
+                <div className="explorer-row" key={tx.hash}>
+                  <span>{tx.kind}</span>
+                  <Link
+                    className="hash-link"
+                    to={"/explorer/transactions/" + tx.hash}
+                  >
+                    {tx.hash}
+                  </Link>
+                </div>
+              ))}
+            </>
+          )}
+        </section>
+      )}
+    </>
+  );
+}
+
+function ReceiptLookup({ hash }) {
+  const state = useLoad("/explorer/transactions/" + hash);
+  return (
+    <>
+      <Notice error={state.error} />
+      {state.loading && <Loading />}
+      {state.data && <Receipt value={state.data} />}
+    </>
   );
 }

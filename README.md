@@ -105,3 +105,23 @@ JSON success: `{ "ok": true, "data": ... }`; failure: `{ "ok": false, "error": {
 See [DESIGN_NOTES.md](DESIGN_NOTES.md), [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md), [DEMO_GUIDE.md](DEMO_GUIDE.md), [VIVA_NOTES.md](VIVA_NOTES.md), and [IMPLEMENTATION_REPORT.md](IMPLEMENTATION_REPORT.md).
 
 Hardhat configuration follows its [official configuration reference](https://hardhat.org/docs/reference/configuration). Artwork is original and local; see [asset license notes](public/assets/LICENSE.md).
+
+## Local Blockchain Explorer and QR image verification
+
+Open **Blockchain Explorer** in the sidebar. Its network ID, latest block/hash, contract address, issuance/revocation counts and activity come from the current Hardhat node through Ethers. The page polls every four seconds, stops polling on unmount, and refreshes after a successful action. The API caches unchanged block snapshots after checking the deployment identity; event rows use transaction hash plus log index to avoid duplicates. Browse blocks in pages of 12 and follow internal receipt links. Deployment, current-registry and unrelated transactions are labelled separately.
+
+**Execute Blockchain Action** reuses the existing issuance form and required-reason revocation dialog. Both use the original API mutation handlers and server signer. An optional `Accept: application/x-ndjson` response streams Preparing, Submitted, Pending confirmation, Confirmed or Failed; a Confirmed entry requires a successful mined receipt. Hardhat automines quickly, so stages may appear almost together. Receipts include sender, contract, transaction/block hashes, gas, UTC block timestamp and decoded contract events. Ordinary JSON clients remain compatible.
+
+Public verification has **Enter Credential ID**, **Upload QR Image** and **Check Credential Data Integrity** options. Choose or drop a PNG/JPEG/WebP screenshot (maximum 8 MB and 20 megapixels), or focus the upload zone and paste an image with Ctrl+V. The installed ZXing package decodes locally; neither the image nor a decoded URL is sent to an external service. The parser accepts `http(s)://localhost[:port]/verify/VED-…`, `127.0.0.1` and `[::1]` equivalents with the existing ID format. It rejects unrelated URLs, credentials, query strings, fragments and malformed paths. It never navigates to the QR's URL: only the extracted ID goes to the local verification API.
+
+A phone's localhost means the phone itself, not this laptop. Screenshot upload avoids that network problem. Successful decoding is not successful verification: the live contract determines Verified, Revoked or Not Found, and an unavailable chain produces its own error. A copied QR still does not prove PDF bytes or appearance; use the separate supplied-data integrity form for academic fields. Revocation appends a new transaction and event, preserving issuance history.
+
+Additional read-only routes:
+
+| Method | Route | Result |
+|---|---|---|
+| GET | `/api/explorer?before=NUMBER` | Live network/event summary and a block page; cursor optional |
+| GET | `/api/explorer/blocks/:number` | Block hash, parent, timestamp and classified transaction list |
+| GET | `/api/explorer/transactions/:hash` | Actual transaction, receipt and decoded registry events |
+
+After pulling this upgrade run `npm install`, then restart `npm run dev` so the API loads its new routes. Existing hashing, PDFs and stored record format are unchanged.

@@ -1751,3 +1751,197 @@ dialog .actions {
     scroll-behavior: auto !important;
   }
 }
+/* Local ledger and screenshot verification share the existing design tokens. */
+.segments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 24px;
+}
+.segments button {
+  border: 1px solid var(--line);
+  background: white;
+  padding: 12px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+}
+.segments button[aria-pressed="true"] {
+  background: #087f5b;
+  color: white;
+  border-color: #087f5b;
+}
+.verify-tabs {
+  position: relative;
+  margin-top: -28px;
+  padding: 4px 20px;
+  margin-bottom: 20px;
+}
+.verify-tabs .segments {
+  margin: 12px 0;
+}
+.verify-tabs ~ .lookup {
+  margin-top: 0;
+}
+.explorer-stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.explorer-stats h2 {
+  font-size: 22px;
+  margin-top: 8px;
+}
+.explorer-actions {
+  margin: 30px 0;
+}
+.explorer-actions > .heading {
+  margin-top: 26px;
+}
+.explorer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.explorer-row small,
+.explorer-row div > a {
+  display: block;
+  margin-top: 5px;
+}
+.receipt dd,
+.hash-link,
+.transaction-progress code {
+  overflow-wrap: anywhere;
+}
+.receipt dl > div,
+dl.receipt > div {
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+.receipt dt {
+  font-size: 12px;
+  text-transform: capitalize;
+  color: #65716c;
+}
+.receipt dd {
+  margin: 5px 0;
+  font-family: monospace;
+}
+.receipt pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.transaction-progress {
+  margin-bottom: 20px;
+}
+.transaction-progress li {
+  margin: 8px 0;
+}
+.transaction-progress code {
+  display: block;
+  font-size: 11px;
+}
+.upload-zone {
+  text-align: center;
+  padding: 30px;
+  border: 2px dashed #a9c9bb;
+  border-radius: 12px;
+  background: #f5faf7;
+}
+.upload-zone .button {
+  position: relative;
+  overflow: hidden;
+  margin: 12px;
+  cursor: pointer;
+}
+.upload-zone input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+}
+.upload-zone small {
+  display: block;
+}
+.qr-preview {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-top: 24px;
+}
+.qr-preview img {
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
+  background: #f4f5f4;
+  border-radius: 8px;
+}
+.qr-panel {
+  margin-bottom: 24px;
+}
+@media (max-width: 800px) {
+  .explorer-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .explorer-row {
+    flex-wrap: wrap;
+  }
+  .qr-preview {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .segments button {
+    flex: 1;
+  }
+}
+.upload-zone > svg {
+  margin: 0 auto 10px;
+}
+.qr-panel.has-image .upload-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 16px;
+}
+.qr-panel.has-image .upload-zone > svg {
+  flex-shrink: 0;
+  width: 24px;
+  margin: 0;
+}
+.qr-panel.has-image .upload-zone h2 {
+  font-size: 17px;
+  margin: 0;
+}
+.qr-panel.has-image .upload-zone p,
+.qr-panel.has-image .upload-zone > small {
+  display: none;
+}
+.qr-panel.has-image .upload-zone .button {
+  margin: 0;
+}
+.qr-panel.has-image .qr-preview {
+  margin-top: 12px;
+}
+.qr-panel.has-image .qr-preview img {
+  width: 100px;
+  height: 100px;
+}
+@media (max-width: 600px) {
+  .qr-panel.has-image .upload-zone {
+    flex-wrap: wrap;
+  }
+  .qr-panel.has-image .qr-preview {
+    flex-direction: row;
+    gap: 12px;
+  }
+  .qr-preview strong {
+    overflow-wrap: anywhere;
+  }
+}
