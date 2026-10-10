@@ -41,7 +41,7 @@ On-chain: credential ID or its deterministic representation, `bytes32` hash, iss
 
 ## Design direction — a major evaluation criterion
 The interface must look like a high-quality, professionally art-directed academic credential SaaS rather than an unstyled classroom CRUD app.
-- Palette: deep navy (#10233F), blue (#3568D4), very light neutral (#F5F7FB), restrained teal for verified and amber/red for warnings.
+- Palette (updated at the user's request): charcoal (#181D1C), white surfaces, emerald (#087F5B), light neutral (#F5F6F5), emerald for verified and amber/red for warnings.
 - Composition: persistent refined sidebar; generous whitespace; typographic hierarchy; sophisticated empty states; data tables with strong alignment; consistent icons, radii and micro-interactions.
 - **Use intentional background imagery:** locally stored, appropriately licensed or newly generated abstract academic architecture/campus/library/engraved-paper imagery. Add a subdued hero/background image on Dashboard and tasteful background texture/ornamentation on certificate preview and public verification hero. Keep contrast high using navy overlays/gradients and avoid busy full-screen imagery behind forms. No remote runtime image dependencies. Include attribution/LICENSE notes when needed; use CSS/SVG self-authored backgrounds if downloading approved assets isn't practical.
 - Certificate: A4 landscape, elegant double border, institutional heading `PICT — DEMO`, clear certificate typography, seal marked `DEMO`, signature line `Demo Authorized Issuer`, exact academic fields, printed credential ID and readable QR with verification instructions. No claim of official issuance.

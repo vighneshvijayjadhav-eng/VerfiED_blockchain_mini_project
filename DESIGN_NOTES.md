@@ -2,9 +2,9 @@
 
 Routes: dashboard `/`, issuance `/issue`, searchable registry `/registry`, document `/certificates/:id`, public lookup `/verify` and `/verify/:id`.
 
-Desktop: 232px persistent navy sidebar, 1120px content maximum, 32px gutters. Mobile: stacked navigation and single-column forms. Spacing uses 4/8/12/16/24/32/48px; surfaces use 16px radii, quiet borders and shallow shadows. Navy #10233F, cobalt #3568D4, pale stone #F5F7FB, teal success, amber integrity warnings, red revoked. Local system sans-serif for controls; Georgia for editorial headings and certificate display.
+Desktop: 232px persistent charcoal sidebar, 1120px content maximum, 32px gutters. Mobile: stacked navigation and single-column forms. Spacing uses 4/8/12/16/24/32/48px; surfaces use 16px radii, quiet borders and shallow shadows. At the user's request, the site now uses charcoal #181D1C, white surfaces, emerald #087F5B and light neutral #F5F6F5. Emerald indicates primary actions and success; amber integrity warnings and red revoked states remain distinct. Local system sans-serif for controls; Georgia for editorial headings and certificate display.
 
-Original local SVG campus colonnade fills the right side of the dashboard hero under a navy overlay. A separate original guilloche engraving appears on public verification and certificate preview. No remote assets or fonts. Asset licensing is recorded in public/assets/LICENSE.md.
+Original local SVG campus colonnade fills the right side of the dashboard hero in neutral stone tones under a charcoal overlay. A separate original guilloche engraving appears on public verification and certificate preview. No remote assets or fonts. Asset licensing is recorded in public/assets/LICENSE.md. The downloadable academic PDF retains its existing print design; this refresh covers the website theme.
 
 Reusable components: page heading, status pill, empty state, loading skeleton, error notice, evidence panel, academic field grid, certificate preview, confirmation dialog. Status comes from live chain reads. Integrity is displayed separately from registration/revocation.
 

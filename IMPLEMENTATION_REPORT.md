@@ -46,6 +46,10 @@ Screenshots in `docs/screenshots` show fictional demo data and real local transa
 
 Hardhat's initial local-installation error was caused by the execution sandbox blocking Windows `realpath`; the normal host environment compiled and tested successfully. An initial clean reinstall hit a native-binary file lock while Hardhat was running; stopping the node resolved it. Poppler printed optional Symbol/ArialUnicode font warnings, but the used standard-font certificate text rendered correctly in inspected images.
 
+## Website theme refresh
+
+The user subsequently selected charcoal, white and emerald. Updated the shared stylesheet, primary/focus/hover accents, neutral campus artwork, favicon and browser theme colour. Production build passed; dashboard, issuance and public verification received visual checks, including a mobile viewport. Screenshot files for dashboard and issuance show the new theme; the revoked screenshot preserves the earlier functional test evidence. This presentation-only change does not alter contracts, API behaviour or the downloadable PDF design.
+
 ## Deliberate limits
 
 This is a trusted localhost demonstration, not production authentication or durable decentralized infrastructure. Hardhat accounts are unlocked development accounts. QR links using localhost must be opened on the same computer. Data integrity does not prove PDF-byte/visual authenticity. Reasons are off-chain statements. Built-in PDF fonts restrict supported input to the documented Latin character set. Disk failure after chain confirmation requires manual recovery/reset; there is no recovery journal. No public-chain deployment, physical printer test, phone-over-LAN access or load testing was performed.
